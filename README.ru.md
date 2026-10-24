@@ -31,19 +31,7 @@
 | **BetterActivities** | Иконки активностей в списке участников и все активности в попауте профиля. | [vc-betterActivities](https://github.com/Nanda070/vc-betterActivities) |
 | **AntiRickroll** | Предупреждает о возможных риклоллах в сообщениях, включая замаскированные ссылки. | [vencord-antirickroll](https://github.com/Nanda070/vencord-antirickroll) |
 | **TrustMeBro** | Обходит проверку возраста Discord (UK Online Safety Act) на стороне клиента. | [TrustMeBro](https://github.com/Nanda070/TrustMeBro) |
-| **LocalDevBadges** 🔒 | Локальные бейджи Staff / Early Verified Bot Developer / Active Developer на вашем профиле. | [dsdevbadge](https://github.com/Nanda070/dsdevbadge) *(приватный)* |
-
-> 🔒 **Приватный репозиторий.** `dsdevbadge` приватный, поэтому его исходники не входят в этот репозиторий, а ссылка открывается только у владельца.
-
-### Авторство
-
-Часть плагинов начиналась как форки чужих работ и сохраняет исходные лицензии:
-
-- **FollowUser**, **VoiceChatUtilities**, **BetterActivities**: оригинал [D3SOX](https://github.com/D3SOX)
-- **rmcord**: оригинал [maxycodone](https://github.com/maxycodone/rmcord)
-- **AntiRickroll**: оригинал [schmayterling](https://github.com/schmayterling/vencord-antirickroll)
-
----
+| 
 
 ## 📦 Установка
 
@@ -126,12 +114,6 @@ pnpm build
 | Плагина нет в списке | Папка вложена слишком глубоко. `index.ts(x)` должен лежать прямо в `src/userplugins/<Plugin>/`. |
 | Плагин сломался после обновления Discord | Патчи привязаны к коду Discord. Отключите плагин и создайте issue в его репозитории. |
 | Discord падает сразу после включения плагина | Отключайте плагины по одному (Настройки → Плагины). Откройте DevTools через `Ctrl+Shift+I`, чтобы увидеть точную ошибку. |
-
----
-
-## ⚠️ Отказ от ответственности
-
-Модификации клиента нарушают условия использования Discord. Плагины предоставляются в образовательных целях **как есть**, используйте их на свой риск. Фейковые бейджи и «проверка возраста» косметические и работают только на стороне клиента. На стороне Discord ничего не выдаётся, другие пользователи этого не видят.
 
 ## 📄 Лицензия
 

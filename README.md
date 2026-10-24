@@ -30,20 +30,7 @@ Every plugin has its own repository (linked below) and a copy in [`plugins/`](pl
 | **VoiceChatUtilities** | Move, mute, deafen or disconnect an entire voice channel at once. | [vc-voiceChatUtilities](https://github.com/Nanda070/vc-voiceChatUtilities) |
 | **BetterActivities** | Activity icons in the member list and all activities in the profile popout. | [vc-betterActivities](https://github.com/Nanda070/vc-betterActivities) |
 | **AntiRickroll** | Warns about potential Rickrolls in messages, including masked links. | [vencord-antirickroll](https://github.com/Nanda070/vencord-antirickroll) |
-| **TrustMeBro** | Bypasses Discord's UK Online Safety Act age verification (client side). | [TrustMeBro](https://github.com/Nanda070/TrustMeBro) |
-| **LocalDevBadges** 🔒 | Local-only Staff / Early Verified Bot Developer / Active Developer badges on your own profile. | [dsdevbadge](https://github.com/Nanda070/dsdevbadge) *(private)* |
-
-> 🔒 **Private repository.** `dsdevbadge` is private, so its source is not part of this repo and the link only works for the owner.
-
-### Credits
-
-Some plugins started as forks of other people's work and keep their original licenses:
-
-- **FollowUser**, **VoiceChatUtilities**, **BetterActivities**: originally by [D3SOX](https://github.com/D3SOX)
-- **rmcord**: originally by [maxycodone](https://github.com/maxycodone/rmcord)
-- **AntiRickroll**: originally by [schmayterling](https://github.com/schmayterling/vencord-antirickroll)
-
----
+| **TrustMeBro** | Bypasses Discord's UK Online Safety Act age verification (client side). | [TrustMeBro](https://github.com/Nanda070/TrustMeBro)
 
 ## 📦 Installation
 
@@ -126,12 +113,6 @@ Restart Discord afterwards.
 | Plugin does not show up in the list | The folder is nested too deep. `index.ts(x)` must be directly inside `src/userplugins/<Plugin>/`. |
 | A plugin stopped working after a Discord update | Patches are tied to Discord's code. Disable it and open an issue in its repository. |
 | Discord crashes right after enabling a plugin | Disable plugins one at a time (Settings → Plugins). Open DevTools with `Ctrl+Shift+I` to see the exact error. |
-
----
-
-## ⚠️ Disclaimer
-
-Client modifications are against Discord's Terms of Service. These plugins are provided for educational purposes **as is**, use them at your own risk. Fake badges and "age verification" tweaks are cosmetic and client-side only. Nothing is granted on Discord's side and other users cannot see them.
 
 ## 📄 License
 
