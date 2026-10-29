@@ -1,48 +1,73 @@
 import ErrorBoundary from "@components/ErrorBoundary";
+import { useForceUpdater } from "@utils/react";
 import definePlugin from "@utils/types";
-import { findByProps, findComponentByCodeLazy } from "@webpack";
+import { findByPropsLazy, findComponentByCodeLazy } from "@webpack";
+import { ChannelStore, MediaEngineStore, SelectedChannelStore, useEffect } from "@webpack/common";
+
 import Settings from "./settings";
 
 const Button = findComponentByCodeLazy(".GREEN,positionKeyStemOverride:");
+const GatewayConnectionStore = findByPropsLazy("getSocket");
+
+// op code 4 = voiceStateUpdate
+const VOICE_STATE_UPDATE = 4;
+
 let enabled = false;
-let originalSend: any;
+const listeners = new Set<() => void>();
+// objects whose send we replaced, mapped to the original send
+const hooked = new Map<any, (...args: any[]) => any>();
 
-function refresh_voice_state(enabled: boolean) {
-    const ChannelStore = findByProps("getChannel", "getDMFromUserId");
-    const SelectedChannelStore = findByProps("getVoiceChannelId");
-    const wsModule = findByProps("getSocket");
-    const MediaEngineStore = findByProps("isDeaf", "isMute");
-    let caca = 0;
-
-    if (!wsModule) {
-        console.error("[FakeDeafen] WebSocket Gateway not found");
-        caca += 1;
+function hookedSend(this: any, op: number, data: any, ...args: any[]) {
+    if (op === VOICE_STATE_UPDATE && enabled && data) {
+        // copy instead of mutating, Discord may reuse this object for its own local voice state
+        data = { ...data };
+        if (Settings.store.fakeMute) data.self_mute = true;
+        if (Settings.store.fakeDeafen) data.self_deaf = true;
     }
-    if (!SelectedChannelStore) {
-        console.error("[FakeDeafen] SelectedChannelStore not found");
-        caca += 1;
-    }
-    if (caca > 0) return;
+    const original = hooked.get(this) ?? hooked.get(Object.getPrototypeOf(this));
+    return original!.apply(this, [op, data, ...args]);
+}
 
-    const socket = wsModule.getSocket();
+// hooks send on whatever owns it (the class prototype, or the instance if send is an own property),
+// so the hook survives reconnects and works even if the socket didn't exist when the plugin started
+function ensureHooked() {
+    const socket = GatewayConnectionStore.getSocket?.();
+    if (!socket) {
+        console.error("[FakeDeafen] socket not found");
+        return null;
+    }
+
+    const owner = Object.hasOwn(socket, "send") ? socket : Object.getPrototypeOf(socket);
+    if (owner.send !== hookedSend) {
+        hooked.set(owner, owner.send);
+        owner.send = hookedSend;
+    }
+    return socket;
+}
+
+function unhookAll() {
+    for (const [owner, original] of hooked) owner.send = original;
+    hooked.clear();
+}
+
+function refresh_voice_state() {
+    const socket = ensureHooked();
     const channelId = SelectedChannelStore.getVoiceChannelId();
-    const channel = channelId ? ChannelStore?.getChannel(channelId) : null;
+    if (!socket || !channelId) return;
 
-    if (socket && channelId) {
-        try {
-            // op code 4 = voiceStateUpdate
-            socket.send(4, {
-                guild_id: channel?.guild_id ?? null,
-                channel_id: channelId,
-                self_mute: (enabled && Settings.store.fakeMute) || (MediaEngineStore?.isMute() ?? false),
-                self_deaf: (enabled && Settings.store.fakeDeafen) || (MediaEngineStore?.isDeaf() ?? false),
-                self_video: false,
-                flags: 0
-            });
-            console.log("[FakeDeafen] voice state updated to", enabled ? "fake deafen" : "normal");
-        } catch (error) {
-            console.error("[FakeDeafen] failed to update voice state:", error);
-        }
+    try {
+        // the hooked send applies the fake mute/deafen on top of the real state
+        socket.send(VOICE_STATE_UPDATE, {
+            guild_id: ChannelStore.getChannel(channelId)?.guild_id ?? null,
+            channel_id: channelId,
+            self_mute: MediaEngineStore.isSelfMute(),
+            self_deaf: MediaEngineStore.isSelfDeaf(),
+            self_video: MediaEngineStore.isVideoEnabled(),
+            flags: 0
+        });
+        console.log("[FakeDeafen] voice state updated to", enabled ? "fake deafen" : "normal");
+    } catch (error) {
+        console.error("[FakeDeafen] failed to update voice state:", error);
     }
 }
 
@@ -74,7 +99,8 @@ function fd_icon() {
 
 function toggleEnabled() {
     enabled = !enabled;
-    refresh_voice_state(enabled);
+    refresh_voice_state();
+    listeners.forEach(l => l());
 }
 
 function handleKeyDown(event: KeyboardEvent) {
@@ -85,12 +111,18 @@ function handleKeyDown(event: KeyboardEvent) {
 }
 
 function fd_button(props: { nameplate?: any; }) {
+    const forceUpdate = useForceUpdater();
+    useEffect(() => {
+        listeners.add(forceUpdate);
+        return () => void listeners.delete(forceUpdate);
+    }, []);
+
     return (
         <Button
             tooltipText={enabled ? "Disable Fake Deafen" : "Enable Fake Deafen"}
             icon={fd_icon}
             role="switch"
-            aria-checked={enabled}
+            ariaChecked={enabled}
             redGlow={enabled}
             plated={props?.nameplate != null}
             onClick={toggleEnabled}
@@ -105,39 +137,16 @@ export default definePlugin({
     settings: Settings,
 
     start() {
-        const wsModule = findByProps("getSocket");
-        if (!wsModule) {
-            console.error("[FakeDeafen] ws module not found")
-            return;
-        }
-        const socket = wsModule.getSocket();
-        if (!socket) {
-            console.error("[FakeDeafen] socket not found")
-            return;
-        }
-
-        // default send function
-        originalSend = socket.send;
-        // modify send function 
-        socket.send = function (op: number, data: any, ...args: any[]) {
-            // op code 4 = voiceStateUpdate don't ask me why
-            if (op === 4 && enabled && data) {
-                if (Settings.store.fakeMute) data.self_mute = true;
-                if (Settings.store.fakeDeafen) data.self_deaf = true;
-            }
-            return originalSend.apply(this, [op, data, ...args]);
-        };
+        ensureHooked();
         window.addEventListener("keydown", handleKeyDown);
     },
 
     stop() {
-        const wsModule = findByProps("getSocket");
-        if (wsModule) {
-            const socket = wsModule.getSocket();
-            if (socket && originalSend) {
-                socket.send = originalSend;
-            }
+        if (enabled) {
+            enabled = false;
+            refresh_voice_state();
         }
+        unhookAll();
         window.removeEventListener("keydown", handleKeyDown);
     },
 
